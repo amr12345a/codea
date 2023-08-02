@@ -3,6 +3,9 @@ import re
 import sys
 import time
 import traceback
+from datetime import datetime
+
+# Get the current time as a datetime object
 
 from binance.enums import *
 from telethon import TelegramClient, events
@@ -12,21 +15,24 @@ from message_patterns import spot_pattern
 from utils import extract_match, emit_collect_success, match_signal, verify_symbol
 from intro import introduction
 import configs
+
 # Telegram API keys
 api_id = configs.TELEGRAM_APP_ID
 api_hash = configs.TELEGRAM_APP_HASH
 phone_number = configs.PHONE_NUMBER
 channel_name = configs.CHANNEL_NAME
 risk_percent = configs.RISK_PERCENTAGE
-buy_percentage =  configs.BUY_PERCENTAGE
-use_stop_loss =  configs.USE_STOP_LOSS
-
+buy_percentage = configs.BUY_PERCENTAGE
+use_stop_loss = configs.USE_STOP_LOSS
+trades = []
 # Connect to the Telegram channel
 client = TelegramClient(phone_number, api_id, api_hash)
 client.start()
 # ========================
 #  INTRODUCTION
 introduction()
+
+
 # ========================
 
 
@@ -76,9 +82,10 @@ async def handle_spot_message(event):
                 quantity=quantity,
             )
 
+
 @client.on(events.NewMessage(chats=[int(channel_name)]))
 async def handle_signal_message(event):
-# Define the regex pattern to extract the symbol, leverage, entries, targets, and stop loss
+    # Define the regex pattern to extract the symbol, leverage, entries, targets, and stop loss
     # Define the possible keywords for a signal
     keywords = ["SHORT", "LONG", "🛑", "✳️"]
 
@@ -92,18 +99,18 @@ async def handle_signal_message(event):
         side = None
         entry = None
         signal_stop_loss = None
-        signal_message = event.raw_text.split("\n") 
+        signal_message = event.raw_text.split("\n")
         for line in signal_message:
             if any(keyword in line for keyword in keywords):
                 symbol = line.split()[0].replace("/", "").upper()
                 try:
                     entry = float(signal_message[2].split(" ")[1])
                 except ValueError:
-                    entry = float(re.findall(r'\d+\.\d+',signal_message[2])[0])
+                    entry = float(re.findall(r'\d+\.\d+', signal_message[2])[0])
                 try:
                     leverage = float(signal_message[1].split(" ")[1].replace("x", ""))
                 except ValueError:
-                    leverage = float(re.findall(r'\d+\.\d+',signal_message[1])[0])
+                    leverage = float(re.findall(r'\d+\.\d+', signal_message[1])[0])
                 if "SHORT" in line:
                     side = "SELL"
                 if "LONG" in line:
@@ -144,16 +151,35 @@ async def handle_signal_message(event):
     if not verify_symbol(bc, symbol):
         return
     print(f"Passed Colection, creating order now  for {symbol}...")
-    try:
-        place_future_order(
-            symbol=symbol,
-            side=side,
-            entry=entry,
-            leverage=leverage)
-    except Exception as e:
-        print(e)
-        print(traceback.format_exc())
+    if symbol not in [next(iter(d)) for d in trades]:
+        try:
+            place_future_order(
+                symbol=symbol,
+                side=side,
+                entry=entry,
+                leverage=leverage)
+            trades.append({"symbol": symbol, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
+    else:
+        if ((datetime.now() - datetime.strptime(trades[-1]["date"], "%Y-%m-%d %H:%M:%S").date()).total_seconds() < 600) and (trades[-1]["symbol"] == symbol):
+
+            trades.clear()
+        else:
+            try:
+                place_future_order(
+                    symbol=symbol,
+                    side=side,
+                    entry=entry,
+                    leverage=leverage)
+                trades.append({"symbol": symbol, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+
+            except Exception as e:
+                print(e)
+                print(traceback.format_exc())
+            trades.clear()
 
     # if order is not None:
     #     logger.info(f"Placed limit {side.lower()} futures order")
@@ -209,8 +235,9 @@ async def handle_signal_message(event):
     #                     logger.info(f"Placed limit futures {side.lower()} order with {stop_loss_price} stop loss and {take_profit_price} take profit for {symbol}")
 
     #         logger.info("No available futures order(s)")
-            # break
+    # break
+
+
 # Start the event loop
 with client:
     client.run_until_disconnected()
-
