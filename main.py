@@ -153,21 +153,23 @@ async def handle_signal_message(event):
     print(f"Passed Colection, creating order now  for {symbol}...")
     if symbol not in [next(iter(d)) for d in trades]:
         try:
+            trades.append({"symbol": symbol, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
             place_future_order(
                 symbol=symbol,
                 side=side,
                 entry=entry,
                 leverage=leverage)
-            trades.append({"symbol": symbol, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+
 
         except Exception as e:
             print(e)
             print(traceback.format_exc())
     else:
-        if ((datetime.now() - datetime.strptime(trades[-1]["date"], "%Y-%m-%d %H:%M:%S").date()).total_seconds() < 600) and (trades[-1]["symbol"] == symbol):
+        if abs(((datetime.now() - datetime.strptime(trades[-1]["date"], "%Y-%m-%d %H:%M:%S").date()).total_seconds()) < 600) and (trades[-1]["symbol"] == symbol):
 
             trades.clear()
         else:
+            trades.clear()
             try:
                 place_future_order(
                     symbol=symbol,
@@ -179,7 +181,7 @@ async def handle_signal_message(event):
             except Exception as e:
                 print(e)
                 print(traceback.format_exc())
-            trades.clear()
+
 
     # if order is not None:
     #     logger.info(f"Placed limit {side.lower()} futures order")
