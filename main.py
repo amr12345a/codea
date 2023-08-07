@@ -151,9 +151,11 @@ async def handle_signal_message(event):
     if not verify_symbol(bc, symbol):
         return
     print(f"Passed Colection, creating order now  for {symbol}...")
-    if symbol not in [next(iter(d)) for d in trades]:
+    print([next(iter(d.values())) for d in trades])
+    if symbol not in [next(iter(d.values())) for d in trades]:
         try:
             trades.append({"symbol": symbol, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+            print(trades)
             place_future_order(
                 symbol=symbol,
                 side=side,
@@ -165,11 +167,11 @@ async def handle_signal_message(event):
             print(e)
             print(traceback.format_exc())
     else:
-        if abs(((datetime.now() - datetime.strptime(trades[-1]["date"], "%Y-%m-%d %H:%M:%S").date()).total_seconds()) < 600) and (trades[-1]["symbol"] == symbol):
+        print(abs(((datetime.now() - datetime.strptime(trades[-1]["date"], "%Y-%m-%d %H:%M:%S")).total_seconds())))
+        if abs(((datetime.now() - datetime.strptime(trades[-1]["date"], "%Y-%m-%d %H:%M:%S")).total_seconds()) < 600) and (trades[-1]["symbol"] == symbol):
 
-            trades.clear()
+            pass
         else:
-            trades.clear()
             try:
                 place_future_order(
                     symbol=symbol,
