@@ -15,7 +15,7 @@ from message_patterns import spot_pattern
 from utils import extract_match, emit_collect_success, match_signal, verify_symbol
 from intro import introduction
 import configs
-
+sec = input("SESSION NAME: ")
 # Telegram API keys
 api_id = configs.TELEGRAM_APP_ID
 api_hash = configs.TELEGRAM_APP_HASH
@@ -26,7 +26,7 @@ buy_percentage = configs.BUY_PERCENTAGE
 use_stop_loss = configs.USE_STOP_LOSS
 trades = []
 # Connect to the Telegram channel
-client = TelegramClient(phone_number, api_id, api_hash)
+client = TelegramClient(sec, api_id, api_hash)
 client.start()
 # ========================
 #  INTRODUCTION
