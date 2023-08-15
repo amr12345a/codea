@@ -19,7 +19,7 @@ import configs
 # Telegram API keys
 api_id = configs.TELEGRAM_APP_ID
 api_hash = configs.TELEGRAM_APP_HASH
-phone_number = configs.PHONE_NUMBER
+phone_number = input("Sec: ")
 channel_name = configs.CHANNEL_NAME
 risk_percent = configs.RISK_PERCENTAGE
 buy_percentage = configs.BUY_PERCENTAGE
