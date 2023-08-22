@@ -99,6 +99,7 @@ def open_orders_futures(symbol):
 
 # Function to place a Spot trade
 def place_spot_trade(pair, side, quantity):
+    logs = open("file.txt", "a+")
     market_price = float(client.get_symbol_ticker(symbol=pair)["price"])
     ext = [i["quantityPrecision"] for i in client.futures_exchange_info()["symbols"] if
            i["pair"] == pair][0]
@@ -113,6 +114,7 @@ def place_spot_trade(pair, side, quantity):
         )
         logger.info(f"Placed {side} order for {pair} at price {market_price}")
         print(order)
+        logs.write(str(order) + "\n")
     except Exception as e:
         logger.info(f"Error placing {side} order for {pair}: {str(e)}")
     take_profit_price = market_price * (1 + risk_percent) if side == "BUY" else market_price * (
@@ -121,6 +123,8 @@ def place_spot_trade(pair, side, quantity):
             1 + risk_percent)
     print(take_profit_price, "take profit")
     print(stop_loss_price, "stop loss")
+    logs.write(str(take_profit_price) + "\n")
+    logs.write(str(stop_loss_price) + "\n")
     while True:
         time.sleep(0.5)
         try:
@@ -135,7 +139,7 @@ def place_spot_trade(pair, side, quantity):
                         quantity=quan
                     )
                     print(sell)
-
+                    logs.write(str(sell) + "\n")
                     print("Order close")
                     break
             else:
@@ -150,21 +154,22 @@ def place_spot_trade(pair, side, quantity):
                         quantity=quan
                     )
                     print(sell)
-
+                    logs.write(str(sell) + "\n")
                     print("Order close")
                     break
         except Exception as e:
             print(e)
             pass
-
+    logs.close()
     return order
 
 
 # function to place a futures trade
 def place_future_order(symbol, side, entry, leverage):
     # Calculate the quantity to trade based on the account balance and the percentage risk
-
+    logs = open("file.txt", "a+")
     print(client2.balance())
+
     balance = float(list(i["balance"] for i in client2.balance() if i["asset"] == "USDT")[0])
     ticker = client.futures_symbol_ticker(symbol=symbol)
     market_price = float(ticker['price'])
@@ -203,7 +208,9 @@ def place_future_order(symbol, side, entry, leverage):
     print(f"Order placed successfully: {order}")
     print("Take Profit", take_profit_price)
     print("Stop Loss", stop_loss_price)
-
+    logs.write(str(order) + "\n")
+    logs.write(str(take_profit_price) + "\n")
+    logs.write(str(stop_loss_price) + "\n")
     orderId = order["orderId"]
     order_status = client.futures_get_order(symbol=symbol, orderId=orderId)
 
@@ -213,43 +220,62 @@ def place_future_order(symbol, side, entry, leverage):
             if side == "BUY":
                 nowprice = float(client.futures_symbol_ticker(symbol=symbol)['price'])
                 print(nowprice)
+                logs.write(str(nowprice) + "\n")
                 if (take_profit_price <= nowprice) or (stop_loss_price >= nowprice):
-                    sell = client.futures_create_order(
-                        side="SELL",
-                        type=FUTURE_ORDER_TYPE_MARKET,
-                        # timeInForce=TIME_IN_FORCE_GTC,
-                        quantity=quan,
-                        leverage=leverage,
-                        # price=market_price,
-                        symbol=symbol,
-                        # stopPrice=stop_loss_price
-                    )
+                    while True:
+                        try:
+                            sell = client.futures_create_order(
+                                side="SELL",
+                                type=FUTURE_ORDER_TYPE_MARKET,
+                                # timeInForce=TIME_IN_FORCE_GTC,
+                                quantity=quan,
+                                leverage=leverage,
+                                # price=market_price,
+                                symbol=symbol,
+                                # stopPrice=stop_loss_price
+                            )
+                            break
+                        except Exception as e:
+                            print(e)
+                            pass
 
                     print("Order close")
                     print(sell)
+                    logs.write(str(sell) + "\n")
+                    logs.write(str(take_profit_price) + "\n")
+                    logs.write(str(stop_loss_price) + "\n")
                     break
             else:
                 nowprice = float(client.futures_symbol_ticker(symbol=symbol)['price'])
                 print(nowprice)
+                logs.write(str(nowprice) + "\n")
 
                 if (take_profit_price >= nowprice) or (stop_loss_price <= nowprice):
-                    sell = client.futures_create_order(
-                        side="BUY",
-                        type=FUTURE_ORDER_TYPE_MARKET,
-                        # timeInForce=TIME_IN_FORCE_GTC,
-                        quantity=quan,
-                        leverage=leverage,
-                        # price=market_price,
-                        symbol=symbol,
-                        # stopPrice=stop_loss_price
-                    )
-
+                    while True:
+                        try:
+                            sell = client.futures_create_order(
+                                side="BUY",
+                                type=FUTURE_ORDER_TYPE_MARKET,
+                                # timeInForce=TIME_IN_FORCE_GTC,
+                                quantity=quan,
+                                leverage=leverage,
+                                # price=market_price,
+                                symbol=symbol,
+                                # stopPrice=stop_loss_price
+                            )
+                            break
+                        except Exception as e:
+                            print(e)
+                            pass
+                    logs.write(str(sell) + "\n")
+                    logs.write(str(take_profit_price) + "\n")
+                    logs.write(str(stop_loss_price) + "\n")
                     print("Order close")
                     print(sell)
                     break
         except:
             pass
-
+    logs.close()
     # print(f"Take profit order placed successfully: {take_profit_order}")
 
     return print(f"Placed {side} order for {symbol} at {market_price}.")
